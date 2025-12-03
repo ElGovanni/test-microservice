@@ -7,7 +7,6 @@ metadata:
     {{- include "rabbitmq.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.rabbitmq.service.type }}
-  clusterIP: None  # Headless service for StatefulSet
   ports:
     - port: {{ .Values.rabbitmq.service.amqpPort }}
       targetPort: amqp
