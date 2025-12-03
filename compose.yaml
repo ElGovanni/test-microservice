@@ -1,0 +1,137 @@
+services:
+  # Auth Service
+  auth-service:
+    build:
+      context: ./auth-service
+      target: frankenphp_dev
+    container_name: auth-service
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: localhost
+      DEFAULT_URI: http://localhost:8001
+      DATABASE_URL: postgresql://auth_user:auth_pass@postgres-auth:5432/auth_db?serverVersion=16&charset=utf8
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production}
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      APP_ENV: dev
+      FRANKENPHP_WORKER_CONFIG: watch
+      XDEBUG_MODE: "${XDEBUG_MODE:-off}"
+    volumes:
+      - ./auth-service:/app
+      - ./auth-service/frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro
+      - ./auth-service/frankenphp/conf.d/20-app.dev.ini:/usr/local/etc/php/app.conf.d/20-app.dev.ini:ro
+    ports:
+      - "8001:80"
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    tty: true
+    networks:
+      - microservices
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      target: frankenphp_dev
+    container_name: user-service
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: localhost
+      DEFAULT_URI: http://localhost:8002
+      DATABASE_URL: postgresql://user_user:user_pass@postgres-user:5432/user_db?serverVersion=16&charset=utf8
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production}
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      APP_ENV: dev
+      FRANKENPHP_WORKER_CONFIG: watch
+      XDEBUG_MODE: "${XDEBUG_MODE:-off}"
+    volumes:
+      - ./user-service:/app
+      - ./user-service/frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro
+      - ./user-service/frankenphp/conf.d/20-app.dev.ini:/usr/local/etc/php/app.conf.d/20-app.dev.ini:ro
+    ports:
+      - "8002:80"
+    depends_on:
+      postgres-user:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    tty: true
+    networks:
+      - microservices
+
+  # PostgreSQL for Auth Service
+  postgres-auth:
+    image: postgres:16-alpine
+    container_name: postgres-auth
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "auth_user", "-d", "auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices
+
+  # PostgreSQL for User Service
+  postgres-user:
+    image: postgres:16-alpine
+    container_name: postgres-user
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: user_user
+      POSTGRES_PASSWORD: user_pass
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user_user", "-d", "user_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices
+
+networks:
+  microservices:
+    driver: bridge
+
+volumes:
+  postgres_auth_data:
+  postgres_user_data:
+  rabbitmq_data:

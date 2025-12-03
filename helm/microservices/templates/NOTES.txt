@@ -1,0 +1,62 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your microservices application has been deployed.
+
+1. Check the status of your deployment:
+   kubectl get pods -l "app.kubernetes.io/instance={{ .Release.Name }}"
+
+2. Access your services:
+
+{{- if .Values.authService.ingress.enabled }}
+{{- range .Values.authService.ingress.hosts }}
+   Auth Service: https://{{ .host }}
+{{- end }}
+{{- else }}
+   Auth Service:
+   kubectl port-forward svc/{{ .Values.authService.name }} 8001:{{ .Values.authService.service.port }}
+   Then access: http://localhost:8001
+{{- end }}
+
+{{- if .Values.userService.ingress.enabled }}
+{{- range .Values.userService.ingress.hosts }}
+   User Service: https://{{ .host }}
+{{- end }}
+{{- else }}
+   User Service:
+   kubectl port-forward svc/{{ .Values.userService.name }} 8002:{{ .Values.userService.service.port }}
+   Then access: http://localhost:8002
+{{- end }}
+
+3. Run database migrations:
+
+   Auth Service:
+   kubectl exec -it deployment/{{ .Values.authService.name }} -- bin/console doctrine:migrations:migrate --no-interaction
+
+   User Service:
+   kubectl exec -it deployment/{{ .Values.userService.name }} -- bin/console doctrine:migrations:migrate --no-interaction
+
+{{- if .Values.rabbitmq.ingress.enabled }}
+4. Access RabbitMQ Management UI:
+{{- range .Values.rabbitmq.ingress.hosts }}
+   https://{{ .host }}
+{{- end }}
+   Username: {{ .Values.secrets.rabbitmq.username }}
+   Password: {{ .Values.secrets.rabbitmq.password }}
+{{- else }}
+4. Access RabbitMQ Management UI (port-forward):
+   kubectl port-forward svc/{{ .Values.rabbitmq.name }} 15672:{{ .Values.rabbitmq.service.managementPort }}
+   Then access: http://localhost:15672
+   Username: {{ .Values.secrets.rabbitmq.username }}
+   Password: {{ .Values.secrets.rabbitmq.password }}
+{{- end }}
+
+5. Monitor the user event consumer:
+   kubectl logs -f deployment/{{ .Values.userService.name }}-consumer
+
+IMPORTANT NOTES:
+- Make sure to change default passwords in values.yaml before deploying to production
+- Update the imageOwner in values.yaml to match your GitHub username/organization
+- Configure proper ingress hostnames for your domain
+- Set up cert-manager for TLS certificates if using ingress
+
+For more information, see the deployment documentation in DEPLOYMENT.md

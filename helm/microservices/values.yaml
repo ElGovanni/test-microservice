@@ -1,0 +1,328 @@
+# Default values for microservices
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  # IMPORTANT: Replace with your GitHub username or organization
+  imageRegistry: ghcr.io
+  imageOwner: elgovanni
+  imagePullPolicy: IfNotPresent
+  # For private repositories, create a secret with:
+  # kubectl create secret docker-registry ghcr-secret \
+  #   --docker-server=ghcr.io \
+  #   --docker-username=YOUR_GITHUB_USERNAME \
+  #   --docker-password=YOUR_GITHUB_PAT
+  imagePullSecrets: []
+  # - name: ghcr-secret
+
+# Unified Ingress for single domain with path-based routing
+# Enable this to use: mydomain.pl/auth/* and mydomain.pl/user/*
+# When enabled, set authService.ingress.enabled and userService.ingress.enabled to false
+unifiedIngress:
+  enabled: false
+  className: "nginx"
+  host: "mydomain.pl"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  tls:
+    enabled: true
+    secretName: "microservices-tls"
+  # Optional: expose RabbitMQ management at /rabbitmq
+  rabbitmq:
+    enabled: false
+
+# Shared secrets configuration
+secrets:
+  # JWT secret shared between services
+  # Generate with: openssl rand -base64 32
+  jwtSecret: "your-secret-key-change-this-in-production"
+
+  # PostgreSQL passwords
+  postgres:
+    authPassword: "auth_pass_change_me"
+    userPassword: "user_pass_change_me"
+
+  # RabbitMQ credentials
+  rabbitmq:
+    username: "guest"
+    password: "guest_change_me"
+
+# Auth Service configuration
+authService:
+  enabled: true
+  name: auth-service
+  replicaCount: 2
+
+  image:
+    repository: microservice-auth-service
+    tag: latest
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: auth.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: auth-service-tls
+        hosts:
+          - auth.example.com
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 80
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  env:
+    APP_ENV: prod
+    SERVER_NAME: "auth.example.com"
+
+# User Service configuration
+userService:
+  enabled: true
+  name: user-service
+  replicaCount: 2
+
+  image:
+    repository: microservice-user-service
+    tag: latest
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: user.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: user-service-tls
+        hosts:
+          - user.example.com
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 80
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  env:
+    APP_ENV: prod
+    SERVER_NAME: "user.example.com"
+
+  # Consumer deployment for RabbitMQ events
+  consumer:
+    enabled: true
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+# PostgreSQL configuration for Auth Service
+postgresAuth:
+  enabled: true
+  name: postgres-auth
+
+  image:
+    repository: postgres
+    tag: "16-alpine"
+
+  service:
+    type: ClusterIP
+    port: 5432
+
+  persistence:
+    enabled: true
+    storageClass: "standard-rwo"  # GCP standard persistent disk
+    size: 10Gi
+    accessMode: ReadWriteOnce
+
+  database: auth_db
+  username: auth_user
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# PostgreSQL configuration for User Service
+postgresUser:
+  enabled: true
+  name: postgres-user
+
+  image:
+    repository: postgres
+    tag: "16-alpine"
+
+  service:
+    type: ClusterIP
+    port: 5432
+
+  persistence:
+    enabled: true
+    storageClass: "standard-rwo"  # GCP standard persistent disk
+    size: 10Gi
+    accessMode: ReadWriteOnce
+
+  database: user_db
+  username: user_user
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  name: rabbitmq
+
+  image:
+    repository: rabbitmq
+    tag: "3-management-alpine"
+
+  service:
+    type: ClusterIP
+    amqpPort: 5672
+    managementPort: 15672
+
+  # For production, expose management UI via ingress
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: rabbitmq.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: rabbitmq-tls
+        hosts:
+          - rabbitmq.example.com
+
+  persistence:
+    enabled: true
+    storageClass: "standard-rwo"  # GCP standard persistent disk
+    size: 8Gi
+    accessMode: ReadWriteOnce
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Service Account
+serviceAccount:
+  create: true
+  name: microservices-sa
+  annotations: {}
+
+# Pod Security Context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

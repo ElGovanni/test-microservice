@@ -1,0 +1,14 @@
+apiVersion: v2
+name: microservices
+description: A Helm chart for microservices architecture with auth and user services
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - microservices
+  - symfony
+  - auth
+  - user-management
+maintainers:
+  - name: Your Name
+    email: your-email@example.com

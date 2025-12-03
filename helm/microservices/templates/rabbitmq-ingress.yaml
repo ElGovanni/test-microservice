@@ -1,0 +1,41 @@
+{{- if and .Values.rabbitmq.enabled .Values.rabbitmq.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.rabbitmq.name }}
+  labels:
+    {{- include "rabbitmq.labels" . | nindent 4 }}
+  {{- with .Values.rabbitmq.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.rabbitmq.ingress.className }}
+  ingressClassName: {{ .Values.rabbitmq.ingress.className }}
+  {{- end }}
+  {{- if .Values.rabbitmq.ingress.tls }}
+  tls:
+    {{- range .Values.rabbitmq.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.rabbitmq.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $.Values.rabbitmq.name }}
+                port:
+                  number: {{ $.Values.rabbitmq.service.managementPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

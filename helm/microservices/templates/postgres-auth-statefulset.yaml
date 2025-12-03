@@ -1,0 +1,82 @@
+{{- if .Values.postgresAuth.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.postgresAuth.name }}
+  labels:
+    {{- include "postgresAuth.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ .Values.postgresAuth.name }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "postgresAuth.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "postgresAuth.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: postgres
+        image: "{{ .Values.postgresAuth.image.repository }}:{{ .Values.postgresAuth.image.tag }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        ports:
+        - name: postgres
+          containerPort: {{ .Values.postgresAuth.service.port }}
+          protocol: TCP
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.postgresAuth.database | quote }}
+        - name: POSTGRES_USER
+          value: {{ .Values.postgresAuth.username | quote }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "microservices.fullname" . }}-secrets
+              key: postgres-auth-password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgresAuth.username }} -d {{ .Values.postgresAuth.database }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgresAuth.username }} -d {{ .Values.postgresAuth.database }}
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.postgresAuth.resources | nindent 12 }}
+  {{- if .Values.postgresAuth.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes:
+        - {{ .Values.postgresAuth.persistence.accessMode }}
+      storageClassName: {{ .Values.postgresAuth.persistence.storageClass }}
+      resources:
+        requests:
+          storage: {{ .Values.postgresAuth.persistence.size }}
+  {{- else }}
+  volumes:
+  - name: postgres-data
+    emptyDir: {}
+  {{- end }}
+{{- end }}

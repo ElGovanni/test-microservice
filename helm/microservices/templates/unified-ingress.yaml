@@ -1,0 +1,62 @@
+{{- if .Values.unifiedIngress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-unified
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: ingress
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    {{- with .Values.unifiedIngress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.unifiedIngress.className }}
+  ingressClassName: {{ .Values.unifiedIngress.className }}
+  {{- end }}
+  {{- if .Values.unifiedIngress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.unifiedIngress.host | quote }}
+      secretName: {{ .Values.unifiedIngress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.unifiedIngress.host | quote }}
+      http:
+        paths:
+          {{- if .Values.authService.enabled }}
+          # Auth Service: /auth/* -> auth-service
+          - path: /auth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ .Values.authService.name }}
+                port:
+                  number: {{ .Values.authService.service.port }}
+          {{- end }}
+          {{- if .Values.userService.enabled }}
+          # User Service: /user/* -> user-service
+          - path: /user(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ .Values.userService.name }}
+                port:
+                  number: {{ .Values.userService.service.port }}
+          {{- end }}
+          {{- if .Values.rabbitmq.enabled }}
+          {{- if .Values.unifiedIngress.rabbitmq.enabled }}
+          # RabbitMQ Management UI: /rabbitmq/* -> rabbitmq
+          - path: /rabbitmq(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ .Values.rabbitmq.name }}
+                port:
+                  number: {{ .Values.rabbitmq.service.managementPort }}
+          {{- end }}
+          {{- end }}
+{{- end }}

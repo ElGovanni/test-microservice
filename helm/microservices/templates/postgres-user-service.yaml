@@ -1,0 +1,18 @@
+{{- if .Values.postgresUser.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.postgresUser.name }}
+  labels:
+    {{- include "postgresUser.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.postgresUser.service.type }}
+  clusterIP: None  # Headless service for StatefulSet
+  ports:
+    - port: {{ .Values.postgresUser.service.port }}
+      targetPort: postgres
+      protocol: TCP
+      name: postgres
+  selector:
+    {{- include "postgresUser.selectorLabels" . | nindent 4 }}
+{{- end }}
