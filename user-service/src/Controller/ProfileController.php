@@ -100,6 +100,16 @@ class ProfileController extends AbstractController
         ]);
     }
 
+    #[Route('/health', name: 'health', methods: ['GET'])]
+    public function health(): JsonResponse
+    {
+        return $this->json([
+            'status' => 'ok',
+            'service' => 'user-service',
+            'timestamp' => time()
+        ]);
+    }
+
     private function validateAndGetUserId(Request $request): ?int
     {
         $authHeader = $request->headers->get('Authorization');

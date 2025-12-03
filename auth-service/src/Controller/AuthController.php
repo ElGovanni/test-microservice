@@ -174,4 +174,14 @@ class AuthController extends AbstractController
             'message' => 'Password reset successfully'
         ]);
     }
+
+    #[Route('/health', name: 'health', methods: ['GET'])]
+    public function health(): JsonResponse
+    {
+        return $this->json([
+            'status' => 'ok',
+            'service' => 'auth-service',
+            'timestamp' => time()
+        ]);
+    }
 }
