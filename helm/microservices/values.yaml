@@ -209,7 +209,7 @@ postgresAuth:
 
   persistence:
     enabled: true
-    storageClass: "standard-rwo"  # GCP standard persistent disk
+    storageClass: "microk8s-hostpath"  # MicroK8s hostpath storage
     size: 10Gi
     accessMode: ReadWriteOnce
 
@@ -239,7 +239,7 @@ postgresUser:
 
   persistence:
     enabled: true
-    storageClass: "standard-rwo"  # GCP standard persistent disk
+    storageClass: "microk8s-hostpath"  # MicroK8s hostpath storage
     size: 10Gi
     accessMode: ReadWriteOnce
 
@@ -286,7 +286,7 @@ rabbitmq:
 
   persistence:
     enabled: true
-    storageClass: "standard-rwo"  # GCP standard persistent disk
+    storageClass: "microk8s-hostpath"  # MicroK8s hostpath storage
     size: 8Gi
     accessMode: ReadWriteOnce
 
