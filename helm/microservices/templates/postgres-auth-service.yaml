@@ -7,7 +7,6 @@ metadata:
     {{- include "postgresAuth.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.postgresAuth.service.type }}
-  clusterIP: None  # Headless service for StatefulSet
   ports:
     - port: {{ .Values.postgresAuth.service.port }}
       targetPort: postgres
