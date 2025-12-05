@@ -113,7 +113,7 @@ authService:
 
   env:
     APP_ENV: prod
-    SERVER_NAME: "auth.example.com"
+    SERVER_NAME: "localhost"
 
 # User Service configuration
 userService:
@@ -180,7 +180,7 @@ userService:
 
   env:
     APP_ENV: prod
-    SERVER_NAME: "user.example.com"
+    SERVER_NAME: "localhost"
 
   # Consumer deployment for RabbitMQ events
   consumer:
