@@ -45,12 +45,12 @@ spec:
         - -c
         - |
           echo "Waiting for RabbitMQ port to be open..."
-          until nc -zv {{ .Values.rabbitmq.name }} {{ .Values.rabbitmq.service.amqpPort }} 2>&1 | grep -q succeeded; do
+          until nc -z {{ .Values.rabbitmq.name }} {{ .Values.rabbitmq.service.amqpPort }}; do
             echo "RabbitMQ not ready yet, waiting..."
             sleep 3
           done
-          echo "Waiting additional 60 seconds for RabbitMQ to fully initialize..."
-          sleep 60
+          echo "RabbitMQ port is open, waiting 10 seconds for full initialization..."
+          sleep 10
           echo "RabbitMQ should be ready now!"
       containers:
       - name: auth-service
