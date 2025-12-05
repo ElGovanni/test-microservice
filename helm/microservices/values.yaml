@@ -306,8 +306,8 @@ serviceAccount:
 
 # Pod Security Context
 podSecurityContext:
-  runAsNonRoot: true
-  runAsUser: 1000
+  runAsNonRoot: false
+  # runAsUser: 1000
   fsGroup: 1000
 
 # Security Context
@@ -316,6 +316,8 @@ securityContext:
   capabilities:
     drop:
       - ALL
+    add:
+      - NET_BIND_SERVICE
   readOnlyRootFilesystem: false
 
 # Node selector
