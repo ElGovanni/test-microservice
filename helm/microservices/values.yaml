@@ -285,7 +285,7 @@ rabbitmq:
           - rabbitmq.example.com
 
   persistence:
-    enabled: true
+    enabled: false  # Temporarily disabled for testing
     storageClass: "microk8s-hostpath"  # MicroK8s hostpath storage
     size: 8Gi
     accessMode: ReadWriteOnce
