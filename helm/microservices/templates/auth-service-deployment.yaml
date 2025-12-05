@@ -68,7 +68,7 @@ spec:
         - name: SERVER_NAME
           value: {{ .Values.authService.env.SERVER_NAME | quote }}
         - name: DATABASE_URL
-          value: "postgresql://{{ .Values.postgresAuth.username }}:$(POSTGRES_PASSWORD)@{{ .Values.postgresAuth.name }}:{{ .Values.postgresAuth.service.port }}/{{ .Values.postgresAuth.database }}?serverVersion=16&charset=utf8"
+          value: "postgresql://{{ .Values.postgresAuth.username }}:{{ .Values.secrets.postgres.authPassword }}@{{ .Values.postgresAuth.name }}:{{ .Values.postgresAuth.service.port }}/{{ .Values.postgresAuth.database }}?serverVersion=16&charset=utf8"
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -80,7 +80,7 @@ spec:
               name: {{ include "microservices.fullname" . }}-secrets
               key: jwt-secret
         - name: RABBITMQ_URL
-          value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASS)@{{ .Values.rabbitmq.name }}:{{ .Values.rabbitmq.service.amqpPort }}"
+          value: "amqp://{{ .Values.secrets.rabbitmq.username }}:{{ .Values.secrets.rabbitmq.password }}@{{ .Values.rabbitmq.name }}:{{ .Values.rabbitmq.service.amqpPort }}"
         - name: RABBITMQ_USER
           valueFrom:
             secretKeyRef:
