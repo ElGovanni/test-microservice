@@ -45,8 +45,8 @@ secrets:
 
   # RabbitMQ credentials
   rabbitmq:
-    username: "guest"
-    password: "guest_change_me"
+    username: "admin"
+    password: "admin_change_me"
 
 # Auth Service configuration
 authService:
